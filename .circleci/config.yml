@@ -98,7 +98,7 @@ jobs:
           name: Test backend
           command: |
             cd backend
-            npm run test
+            npm run test --prefix backend
             
   scan-frontend:
     docker:

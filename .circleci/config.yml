@@ -288,6 +288,7 @@ jobs:
           name: Install dependencies
           command: |
             apk add --update tar gzip ansible nodejs npm curl 
+            apk add --update ansible openssh-client tar gzip
             pip install awscli
       - run:
           name: Install OpenSSH
@@ -310,8 +311,8 @@ jobs:
             cd backend
             npm i
             npm run build
-            cd ..
-            tar -C backend -czvf backend.tar.gz
+            cd /home
+            tar czf backend.tar.gz -P /home/circleci/project/backend/dist
             cd .circleci/ansible
             echo "Contents  of the inventory.txt file is -------"
             cat inventory.txt

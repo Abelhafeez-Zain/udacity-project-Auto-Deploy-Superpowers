@@ -184,20 +184,35 @@ jobs:
     docker:
       - image: python:3.7-alpine3.11
     steps:
-      # Checkout code from git
-      # Add ssh keys with fingerprint
-      # attach workspace
+      - checkout
+      - attach_workspace:
+          at: ~/
+      - add_ssh_keys: 
+          fingerprints: [46:72:f9:be:e4:17:c4:cb:36:38:77:91:53:87:a9:d8]
       - run:
           name: Install dependencies
           command: |
-            # Your code here
-            exit 1
+            apk add --update ansible
+      - run:
+          name: Install AWS-CLI
+          command: |
+            pip install awscli
+      - run:
+          name: Install OpenSSH
+          command: |
+            apk add openssh-client
       - run:
           name: Configure server
+          no_output_timeout: 20m
           command: |
-            # Your code here
-            exit 1
-      # Here's where you will add some code to rollback on failure  
+            pwd
+            cd .circleci/ansible/
+            cat inventory.txt
+            ansible-playbook -i inventory.txt configure-server.yml
+          environment:
+            ANSIBLE_HOST_KEY_CHECKING: false
+      - destroy-environment:
+          WorkflowID: "${CIRCLE_WORKFLOW_ID:0:7}" 
   
   deploy-frontend:
     docker:

@@ -218,13 +218,14 @@ jobs:
 
             cd backend
             sudo npm install
-            npm audit fix --audit-level=critical --force
             npm run build
-            sudo npm run > migration_${CIRCLE_WORKFLOW_ID:0:7}.txt
-            cat migration_${CIRCLE_WORKFLOW_ID:0:7}.txt
-            migration_succesful=$(cat migration_${CIRCLE_WORKFLOW_ID:0:7}.txt | grep -c "has been executed successfully")
-            if [ $migration_succesful > 0 ]; then exit 0; else exit 1; fi;
-            
+            sudo npm run > migration_output.txt
+            cat migration_output.txt
+            if grep -q "has been executed successfully." migration_output.txt
+            then
+              touch ~/project/.circleci/outputs/db_migration_success
+            fi
+
       - run:
           name: Send migration results to memstash
           command: |

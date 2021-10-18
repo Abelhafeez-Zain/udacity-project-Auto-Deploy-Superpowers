@@ -229,7 +229,7 @@ jobs:
             
             echo ${result}
       - destroy-environment:
-          WorkflowID: "${CIRCLE_WORKFLOW_ID:0:7}" 
+          workflow_id: "${CIRCLE_WORKFLOW_ID:0:7}" 
       - revert-migrations
 
   deploy-frontend:
@@ -256,9 +256,9 @@ jobs:
             ls -la 
             tar -czvf artifact-"${CIRCLE_WORKFLOW_ID:0:7}".tar.gz dist
             ls -la 
-            aws s3 sync dist s3://udapeople-123lr/
+            aws s3 sync dist s3://udapeople-zz1j287dhjppmz288/
       - destroy-environment:
-          WorkflowID: ${CIRCLE_WORKFLOW_ID:0:7}
+          workflow_id: ${CIRCLE_WORKFLOW_ID:0:7}
       - revert-migrations      
                     
   deploy-backend:
@@ -298,7 +298,7 @@ jobs:
           environment:
             ANSIBLE_HOST_KEY_CHECKING: false
       - destroy-environment:
-          WorkflowID: ${CIRCLE_WORKFLOW_ID:0:7}
+          workflow_id: ${CIRCLE_WORKFLOW_ID:0:7}
       - revert-migrations 
 
   smoke-test:
@@ -320,14 +320,14 @@ jobs:
       - run:
           name: Frontend smoke test.
           command: |
-            if curl -s "http://udapeople-123lr.s3-website-us-west-1.amazonaws.com" | grep "Welcome"
+            if curl -s "http://udapeople-zz1j287dhjppmz288.s3-website-us-west-1.amazonaws.com" | grep "Welcome"
             then
               return 0
             else
               return 1
             fi
       - destroy-environment:
-          WorkflowID: ${CIRCLE_WORKFLOW_ID:0:7}
+          workflow_id: ${CIRCLE_WORKFLOW_ID:0:7}
       - revert-migrations  
 
   cfront-upd-and-clean:
@@ -357,7 +357,7 @@ jobs:
               aws cloudformation delete-stack --stack-name udapeople-backend-${OLD_CIRCLE_WORKFLOW_ID:0:7}
             fi
       - destroy-environment:
-          WorkflowID: ${CIRCLE_WORKFLOW_ID:0:7}
+          workflow_id: ${CIRCLE_WORKFLOW_ID:0:7}
       - revert-migrations  
 
 cleanup:

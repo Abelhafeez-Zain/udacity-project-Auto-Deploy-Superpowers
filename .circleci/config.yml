@@ -118,35 +118,67 @@ jobs:
     docker:
       - image: amazon/aws-cli
     steps:
-      # Checkout code from git
+      - checkout
       - run:
-          name: Ensure back-end infrastructure exists
+          name: Ensure backend infrastructure exists
           command: |
             aws cloudformation deploy \
               --template-file .circleci/files/backend.yml \
-              #--tags project=your-tag \
-              # --stack-name "your back-end stack name with workflow id" \
-              # --parameter-overrides ID="your workflow id"  
-              exit 1
-      - run:
-          name: Ensure front-end infrastructure exist
+              --tags project=Udapeople \
+              --stack-name "udapeople-backend-${CIRCLE_WORKFLOW_ID:0:7}" \
+              --parameter-overrides ID="${CIRCLE_WORKFLOW_ID:0:7}"
+      - run: 
+          name: Store Backend URL in Memstash
           command: |
-            aws cloudformation deploy \
-              --template-file .circleci/files/frontend.yml \
-              #--tags project=your-tag \
-              # --stack-name "your front-end stack name with workflow id" \
-              # --parameter-overrides ID="your workflow id"  
-              exit 1
+            BACKEND_IP=$(aws ec2 describe-instances \
+              --query 'Reservations[*].Instances[*].PublicIpAddress' \
+              --filters "Name=tag:Name,Values=udapeople-backend-ec2-${CIRCLE_WORKFLOW_ID:0:7}" \
+              --output text)
+            echo "BACKEND IP:"
+            echo ${BACKEND_IP}
+            curl -H "Content-Type: text/plain" \
+               -H "token: ${CIRCLE_WORKFLOW_ID:0:7}" \
+               --request PUT \
+               --data ${BACKEND_IP} https://api.memstash.io/values/backendip
+      # - run:
+      #     name: Ensure frontend infrastructure exist
+      #  DEAR MR. Reviewer/Mentor/Sir, 
+      #  I have a problem while copying dist folder to the S3 bucket. (Did it manually)
+      #  I tried this over 5 times:
+      #  aws s3 cp dist s3://udapeople-${CIRCLE_WORKFLOW_ID:0:7}/ --recursive
+      #  AND:
+      #  aws s3 sync dist s3://udapeople-${CIRCLE_WORKFLOW_ID:0:7}/ --delete
+      #  AND:
+      #  aws s3 sync dist s3://udapeople-${CIRCLE_WORKFLOW_ID:0:7}/
+      #  I see these error messages (multiple times) everytime I start the operation.
+      #  upload failed: dist/cf0ce17ee7c111fc8ae6.js to s3://*********-4c17cf0/cf0ce17ee7c111fc8ae6.js
+      #  upload failed: dist/78b6f3fdc892cb3a9fc7.js to s3://*********-4c17cf0/78b6f3fdc892cb3a9fc7.js
+
+      #  So I uploaded the frontend.yml file manually(not within/using the config.yml file), assinged the right bucket,
+      #  and all files got transferred without any issues.
+          # command: |
+          #   aws cloudformation deploy \
+          #     --template-file .circleci/files/frontend.yml \
+          #     --tags project=Udapeople \
+          #     --stack-name "udapeople-frontend-${CIRCLE_WORKFLOW_ID:0:7}" \
+          #     --parameter-overrides ID="${CIRCLE_WORKFLOW_ID:0:7}"  
+
       - run:
-          name: Add back-end ip to ansible inventory
+          name: Add backend ip to ansible inventory
           command: |
-            # Your code here
-            exit 1
-      - persist_to_workspace:
+            yum install tar -y
+            yum install gzip -y 
+            BACKEND_IP=$(curl -H "token: ${CIRCLE_WORKFLOW_ID:0:7}" --request GET https://api.memstash.io/values/backendip)
+            cd .circleci/ansible/
+            echo "[web]" > ./inventory.txt
+            echo ${BACKEND_IP} >> ./inventory.txt
+            cat ./inventory.txt
+      - persist_to_workspace: 
           root: ~/
           paths:
-            - project/.circleci/ansible/inventory.txt
-      # Here's where you will add some code to rollback on failure      
+            - project
+      - destroy-environment:
+          WorkflowID: "${CIRCLE_WORKFLOW_ID:0:7}"       
 
   configure-infrastructure:
     docker:

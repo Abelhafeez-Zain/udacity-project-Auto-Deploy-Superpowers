@@ -140,29 +140,6 @@ jobs:
                --header "token: ${CIRCLE_WORKFLOW_ID:0:7}" \
                --request PUT \
                --data ${BACKEND_IP} https://api.memstash.io/values/backendip
-      # - run:
-      #     name: Ensure frontend infrastructure exist
-      #  DEAR MR. Reviewer/Mentor/Sir, 
-      #  I have a problem while copying dist folder to the S3 bucket. (Did it manually)
-      #  I tried this over 5 times:
-      #  aws s3 cp dist s3://udapeople-${CIRCLE_WORKFLOW_ID:0:7}/ --recursive
-      #  AND:
-      #  aws s3 sync dist s3://udapeople-${CIRCLE_WORKFLOW_ID:0:7}/ --delete
-      #  AND:
-      #  aws s3 sync dist s3://udapeople-${CIRCLE_WORKFLOW_ID:0:7}/
-      #  I see these error messages (multiple times) everytime I start the operation.
-      #  upload failed: dist/cf0ce17ee7c111fc8ae6.js to s3://*********-4c17cf0/cf0ce17ee7c111fc8ae6.js
-      #  upload failed: dist/78b6f3fdc892cb3a9fc7.js to s3://*********-4c17cf0/78b6f3fdc892cb3a9fc7.js
-
-      #  So I uploaded the frontend.yml file manually(not within/using the config.yml file), assinged the right bucket,
-      #  and all files got transferred without any issues.
-          # command: |
-          #   aws cloudformation deploy \
-          #     --template-file .circleci/files/frontend.yml \
-          #     --tags project=Udapeople \
-          #     --stack-name "udapeople-frontend-${CIRCLE_WORKFLOW_ID:0:7}" \
-          #     --parameter-overrides ID="${CIRCLE_WORKFLOW_ID:0:7}"  
-
       - run:
           name: Add backend ip to ansible inventory
           command: |
@@ -214,6 +191,47 @@ jobs:
       - destroy-environment:
           workflow_id: "${CIRCLE_WORKFLOW_ID:0:7}" 
   
+  run-migrations:
+    docker:
+      - image: circleci/node:13.8.0
+    steps:
+      - checkout
+      - restore_cache:
+          keys: [backend-build]
+
+      - run:
+          name: Install AWS-CLI
+          command: |
+            sudo apt-get -y -qq update
+            sudo apt-get -y -qq install python3
+            sudo apt-get -qq install awscli
+      - run:
+          name: Run migrations
+          command: |
+            cd backend
+            npm install
+            npm run migrations > migration_${CIRCLE_WORKFLOW_ID:0:7}.txt
+            cat migration_${CIRCLE_WORKFLOW_ID:0:7}.txt
+      - run:
+          name: Send migration results to memstash
+          command: |
+            cd backend
+            cat migration_${CIRCLE_WORKFLOW_ID:0:7}.txt
+            result=0
+            if grep -q "has been executed successfully" migration_${CIRCLE_WORKFLOW_ID:0:7}.txt
+            then
+              result=1
+            fi
+            curl -H "Content-Type: text/plain" \
+            -H "token: migration_${CIRCLE_WORKFLOW_ID:0:7}" \
+            --request PUT \
+            --data ${result} https://api.memstash.io/values/migration
+            
+            echo ${result}
+      - destroy-environment:
+          WorkflowID: "${CIRCLE_WORKFLOW_ID:0:7}" 
+      - revert-migrations
+
   deploy-frontend:
     docker:
       - image: circleci/node:13.8.0
@@ -249,7 +267,7 @@ jobs:
     steps:
       - checkout
       - add_ssh_keys: 
-          fingerprints: [a7:a2:c1:61:91:19:e8:6e:ab:4e:c6:53:bb:8e:00:d2]
+          fingerprints: [46:72:f9:be:e4:17:c4:cb:36:38:77:91:53:87:a9:d8]
       - attach_workspace:
             at: ~/
       - run:
@@ -380,12 +398,12 @@ workflows:
           
       - configure-infrastructure:
           requires: [deploy-infrastructure]
-      # - run-migrations:
-      #     requires: [configure-infrastructure]
-      # - deploy-frontend:
-      #     requires: [run-migrations]
-      # - deploy-backend:
-      #     requires: [run-migrations]
+      - run-migrations:
+          requires: [configure-infrastructure]
+      - deploy-frontend:
+          requires: [run-migrations]
+      - deploy-backend:
+          requires: [run-migrations]
       # - smoke-test:
       #     requires: [deploy-backend, deploy-frontend]
       # - cloudfront-update:

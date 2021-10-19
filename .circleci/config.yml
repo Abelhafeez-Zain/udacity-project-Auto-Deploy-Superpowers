@@ -261,15 +261,16 @@ jobs:
           name: Deploy frontend objects
           command: |
             BACKEND_IP=$(curl -H "token: ${CIRCLE_WORKFLOW_ID:0:7}" --request GET https://api.memstash.io/values/backendip)
-            npm install webpack-dev-server -g
             cd frontend
             export API_URL=http://${BACKEND_IP}:3030
             echo "API_URL=$API_URL" >> .env
             echo ${API_URL}
             npm install
             npm run build
-            aws s3 cp ./dist s3://udapeople-${CIRCLE_WORKFLOW_ID:0:7} --recursive
-      
+            ls -la 
+            tar -czvf artifact-"${CIRCLE_WORKFLOW_ID:0:7}".tar.gz dist
+            ls -la 
+            aws s3 sync dist s3://udapeople-zz1j287dhjppmz288/
       - destroy-environment:
           workflow_id: ${CIRCLE_WORKFLOW_ID:0:7}
       - revert-migrations      
@@ -333,16 +334,6 @@ jobs:
             apk add --update curl nodejs npm
             pip install awscli
       - run:
-          name: Frontend smoke test.
-          command: |
-            URL="http://udapeople-${CIRCLE_WORKFLOW_ID:0:7}.s3-website-us-east-1.amazonaws.com"
-            if curl -s ${URL} | grep "Welcome"
-            then
-              return 0
-            else
-              return 1
-            fi
-      - run:
           name: Get the URL of Backend and smoke test.
           command: |
             BACKEND_IP=$(curl -H "token: ${CIRCLE_WORKFLOW_ID:0:7}" --request GET https://api.memstash.io/values/backendip)
@@ -353,7 +344,15 @@ jobs:
             else
                 return 1
             fi
-      
+      - run:
+          name: Frontend smoke test.
+          command: |
+            if curl -s "http://udapeople-zz1j287dhjppmz288.s3-website-us-west-1.amazonaws.com" | grep "Welcome"
+            then
+              return 0
+            else
+              return 1
+            fi
        
 
   cfront-upd-and-clean:

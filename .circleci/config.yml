@@ -258,32 +258,20 @@ jobs:
             sudo apt-get -y -qq install python3
             sudo apt-get -qq install awscli
       - run:
+          name: Get backend url
+          command: |
+            BACKEND_IP=$(curl -H "token: IP-${CIRCLE_WORKFLOW_ID:0:9}" \
+            --request GET https://api.memstash.io/values/IP)
+            export API_URL="http://${BACKEND_IP}:3030"
+            echo API_URL="http://${BACKEND_IP}:3030" >> "frontend/.env"
+            echo "${API_URL}"
+      - run:
           name: Deploy frontend objects
           command: |
-            export WorkFlowID="${CIRCLE_WORKFLOW_ID:0:7}" 
-            aws ec2 describe-instances --query 'Reservations[*].Instances[*].PublicDnsName' --filters "Name=tag:Name,Values=backend-$WorkFlowID" --output text > /tmp/api
-            echo "Found API: " $(cat /tmp/api)
-            curl -H "Content-Type: text/plain" -H "token:  ${CIRCLE_WORKFLOW_ID:0:7}" --request PUT --data "$(cat /tmp/api)" https://api.memstash.io/values/backend-api
-            cat /tmp/api 
-            export BACKEND_API="$(curl -H "token:  ${CIRCLE_WORKFLOW_ID:0:7}" --request GET https://api.memstash.io/values/backend-api)"
-            export API_URL="http://${BACKEND_API}:3030"
-            echo "${API_URL}"    
-            echo API_URL=$API_URL >> "frontend/.env"
-            echo ENVIRONMENT=production  >> "frontend/.env" 
-            echo NODE_ENV=production >> "frontend/.env"
-            cat "frontend/.env"
-            # BACKEND_IP=$(curl -H "token: ${CIRCLE_WORKFLOW_ID:0:7}" --request GET https://api.memstash.io/values/backendip)
-            # cd frontend
-            # export API_URL=http://${BACKEND_IP}:3030
-            # echo "API_URL=$API_URL" >> .env
-            # echo ${API_URL}
-            # echo ${CIRCLE_WORKFLOW_ID:0:7}
-            # echo ${WorkflowID}
+            npm install webpack-dev-server -g
+            cd frontend
             npm install
             npm run build
-            ls -la 
-            tar -czvf artifact-"${CIRCLE_WORKFLOW_ID:0:7}".tar.gz dist
-            ls -la 
             aws s3 sync dist s3://udapeople-kkzain287dhjpp6288/ --acl public-read --delete
       - destroy-environment:
           WorkflowID: ${CIRCLE_WORKFLOW_ID:0:7}

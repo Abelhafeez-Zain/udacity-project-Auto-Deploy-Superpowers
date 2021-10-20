@@ -260,9 +260,6 @@ jobs:
       - run:
           name: Deploy frontend objects
           command: |
-            - run:  
-          name: Get backend API
-          command: |
             export WorkFlowID="${CIRCLE_WORKFLOW_ID:0:7}" 
             aws ec2 describe-instances --query 'Reservations[*].Instances[*].PublicDnsName' --filters "Name=tag:Name,Values=backend-$WorkFlowID" --output text > /tmp/api
             echo "Found API: " $(cat /tmp/api)

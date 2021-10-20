@@ -265,14 +265,16 @@ jobs:
             export API_URL=http://${BACKEND_IP}:3030
             echo "API_URL=$API_URL" >> .env
             echo ${API_URL}
+            echo "zain"
             echo ${CIRCLE_WorkflowID:0:7}
             echo ${WorkflowID}
+            echo "zain"
             npm install
             npm run build
             ls -la 
             tar -czvf artifact-"${CIRCLE_WorkflowID:0:7}".tar.gz dist
             ls -la 
-            aws s3 sync dist s3://udapeople-"${WorkflowID}"/ --acl public-read --delete
+            aws s3 sync dist s3://udapeople-kkzain287dhjpp6288/ --acl public-read --delete
       - destroy-environment:
           WorkflowID: ${CIRCLE_WorkflowID:0:7}
       - revert-migrations      
@@ -347,7 +349,7 @@ jobs:
       - run:
           name: Frontend smoke test.
           command: |
-            URL="http://udapeople-"${WorkflowID}".s3-website-us-east-1.amazonaws.com"
+            URL="http://udapeople-kkzain287dhjpp6288.s3-website-us-east-1.amazonaws.com"
             curl -s $URL | grep "Welcome"
             if curl -s $URL | grep "Welcome"
             then

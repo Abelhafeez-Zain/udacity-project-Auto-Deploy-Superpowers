@@ -265,6 +265,8 @@ jobs:
             export API_URL=http://${BACKEND_IP}:3030
             echo "API_URL=$API_URL" >> .env
             echo ${API_URL}
+            echo ${CIRCLE_WORKFLOW_ID:0:7}
+            echo ${WorkflowID}
             npm install
             npm run build
             ls -la 

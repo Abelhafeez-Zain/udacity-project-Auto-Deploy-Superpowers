@@ -248,31 +248,56 @@ jobs:
 
   deploy-frontend:
     docker:
-      - image: circleci/node:13.8.0
+      - image: amazon/aws-cli
     steps:
       - checkout
-      - run:
-          name: Install dependencies
+      - run: 
+          name: install tar gzip and curl
           command: |
-            sudo apt-get -y -qq update
-            sudo apt-get -y -qq install python3
-            sudo apt-get -qq install awscli
-      - run:
-          name: Deploy frontend objects
+            yum -y install tar 
+            yum -y install gzip
+            yum -y install curl
+      - run: 
+          name: install Dependencies
           command: |
-            BACKEND_IP=$(curl -H "token: ${CIRCLE_WORKFLOW_ID:0:7}" --request GET https://api.memstash.io/values/backendip)
-            cd frontend
-            export API_URL=http://${BACKEND_IP}:3030
-            echo "API_URL=$API_URL" >> .env
-            echo ${API_URL}
-            echo ${CIRCLE_WORKFLOW_ID:0:7}
-            echo ${WorkflowID}
+            curl -sL https://rpm.nodesource.com/setup_lts.x | bash -
+            yum install -y nodejs      
+      - run:  
+          name: Get backend API
+          command: |
+            export WorkFlowID="${CIRCLE_WORKFLOW_ID:0:7}"
+            echo "Workflow id: $WorkFlowID"
+            aws ec2 describe-instances --query 'Reservations[*].Instances[*].PublicDnsName' --filters "Name=tag:Name,Values=backend-$WorkFlowID" --output text > /tmp/api
+            echo "Found API: " $(cat /tmp/api)
+            curl -H "Content-Type: text/plain" -H "token:  ${CIRCLE_WORKFLOW_ID:0:7}" --request PUT --data "$(cat /tmp/api)" https://api.memstash.io/values/backend-api
+            cat /tmp/api 
+            export BACKEND_API="$(curl -H "token:  ${CIRCLE_WORKFLOW_ID:0:7}" --request GET https://api.memstash.io/values/backend-api)"
+            export API_URL="http://${BACKEND_API}:3030"
+            echo "${API_URL}"    
+            echo API_URL=$API_URL >> "frontend/.env"
+            echo ENVIRONMENT=production  >> "frontend/.env" 
+            echo NODE_ENV=production >> "frontend/.env"
+            cat "frontend/.env"
+      - run:  
+          name: configure server
+          working_directory: ./frontend         
+          command: |
             npm install
+            npm install -g typescript ts-node
+            npm install package.json
+            cat .env
+            ls -la
             npm run build
-            ls -la 
-            tar -czvf artifact-"${CIRCLE_WORKFLOW_ID:0:7}".tar.gz dist
-            ls -la 
-            aws s3 sync dist s3://udapeople-kkzain287dhjpp6288/ --acl public-read --delete
+      - run:
+          name: List frontend files
+          working_directory: ./frontend/dist
+          command: |
+            ls
+      - run:
+          name: Deploy frontend object to S3
+          working_directory: ./frontend
+          command: |
+            aws s3 cp ./dist "s3://udapeople-${CIRCLE_WORKFLOW_ID:0:7}" --recursive
       - destroy-environment:
           WorkflowID: ${CIRCLE_WORKFLOW_ID:0:7}
       - revert-migrations      

@@ -1,0 +1,7 @@
+prometheus URL : http://ec2-75-101-236-135.compute-1.amazonaws.com:9090/targets
+backend URL : http://ec2-34-224-85-236.compute-1.amazonaws.com:3030/api/status
+S3 Bucket : http://udapeople-kkzain287dhjpp6288.s3-website-us-east-1.amazonaws.com/#/employees
+GitHub URL : https://github.com/Abelhafeez-Zain/udacity-project-Auto-Deploy-Superpowers
+Cloud Front: dkxw94dj9pijm.cloudfront.net
+
+

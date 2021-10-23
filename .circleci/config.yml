@@ -62,9 +62,8 @@ jobs:
           name: build Back-end 
           command: |
             cd backend
-            npm install
-            npm run build
-            npm audit fix
+            sudo npm install npm@latest -g 
+            sudo npm run build
       - save_cache:
           paths: [backend/node_modules]
           key: backend-build
@@ -93,7 +92,8 @@ jobs:
           name: Test backend
           command: |
             cd backend
-            npm i typescript@3.1.6 run test
+            sudo npm install npm@latest -g 
+            npm run test
             
   scan-frontend:
     docker:

@@ -93,7 +93,7 @@ jobs:
           name: Test backend
           command: |
             cd backend
-            npm run test --audit-level=critical --prefix backend
+            npm run test 
              
   scan-frontend:
     docker:

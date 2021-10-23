@@ -93,7 +93,7 @@ jobs:
           name: Test backend
           command: |
             cd backend
-            npm i typescript@3.1.6 run test
+            npm run test
             
   scan-frontend:
     docker:

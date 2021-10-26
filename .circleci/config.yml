@@ -135,7 +135,7 @@ jobs:
           name: Add back-end ip to ansible inventory
           command: |
             aws ec2 describe-instances \
-            --query 'Reservations[*].Instances[*].PublicDnsName' \
+            --query 'Reservations[*].Instances[*].PublicIpAddress' \
             --filters "Name=tag:Name,Values=backend-${CIRCLE_WORKFLOW_ID:0:7}" \
             --output text >> .circleci/ansible/inventory.txt
             BACKEND_IP=`cat .circleci/ansible/inventory.txt | head -2 | tail -1`
@@ -255,7 +255,14 @@ jobs:
       - run:
           name: Deploy frontend objects
           command: |
-            BACKEND_IP=$(curl -H "token: ${CIRCLE_WORKFLOW_ID:0:7}" --request GET https://api.memstash.io/values/backendip)
+            aws ec2 describe-instances \
+            --query 'Reservations[*].Instances[*].PublicDnsName' \
+            --filters "Name=tag:Name,Values=backend-${CIRCLE_WORKFLOW_ID:0:7}" \
+            --output text >> .circleci/ansible/inventory.txt
+            BACKEND_IP=`cat .circleci/ansible/inventory.txt | head -2 | tail -1`
+            echo "BACKEND_IP: ${BACKEND_IP}"
+
+            # BACKEND_IP=$(curl -H "token: ${CIRCLE_WORKFLOW_ID:0:7}" --request GET https://api.memstash.io/values/backendip)
             cd frontend
             export API_URL=http://${BACKEND_IP}:3030
             echo "API_URL=$API_URL" >> .env
@@ -303,10 +310,6 @@ jobs:
             echo TYPEORM_MIGRATIONS_DIR=$TYPEORM_MIGRATIONS_DIR >> "backend/.env"
             echo TYPEORM_PASSWORD=$TYPEORM_PASSWORD >> "backend/.env"
             echo TYPEORM_DATABASE=$TYPEORM_DATABASE >> "backend/.env"
-            BACKEND_IP=`cat .circleci/ansible/inventory.txt | head -2 | tail -1`
-            export API_URL="${BACKEND_IP}:3030"
-            echo "API_URL=${API_URL}" >> "backend/.env"
-
             cat backend/.env
             cd backend
             npm i
@@ -337,12 +340,14 @@ jobs:
       - run:
           name: Get the URL of Backend and smoke test.
           command: |
-            # your code here
-            BACKEND_IP=`cat .circleci/ansible/inventory.txt | head -2 | tail -1`
+            BACKEND_IP=$(curl -H "token: ${CIRCLE_WORKFLOW_ID:0:7}" --request GET https://api.memstash.io/values/backendip)
             echo ${BACKEND_IP}
-            export URL="http://$BACKEND_IP:3030/api/status"
-            echo $URL
-            curl $URL
+            if curl "${BACKEND_IP}:3030/api/status" | grep "ok"
+            then
+                return 0
+            else
+                return 1
+            fi
       - run:
           name: Frontend smoke test.
           command: |

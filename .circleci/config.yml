@@ -114,41 +114,36 @@ jobs:
       - image: amazon/aws-cli
     steps:
       - checkout
+      - run: yum -y install tar gzip # required to persist to workspace 
       - run:
-          name: Ensure backend infrastructure exists
+          name: Ensure back-end infrastructure exists
           command: |
             aws cloudformation deploy \
               --template-file .circleci/files/backend.yml \
-              --tags project=Udapeople \
-              --stack-name "udapeople-backend-${CIRCLE_WORKFLOW_ID:0:7}" \
-              --parameter-overrides ID="${CIRCLE_WORKFLOW_ID:0:7}"
-      - run: 
-          name: Store Backend URL in Memstash
-          command: |
-            BACKEND_IP=$(aws ec2 describe-instances \
-              --query 'Reservations[*].Instances[*].PublicIpAddress' \
-              --filters "Name=tag:Name,Values=backend-${CIRCLE_WORKFLOW_ID:0:7}" \
-              --output text)
-            echo "BACKEND IP:"
-            echo ${BACKEND_IP}
-            curl --header "Content-Type: text/plain" \
-               --header "token: ${CIRCLE_WORKFLOW_ID:0:7}" \
-               --request PUT \
-               --data ${BACKEND_IP} https://api.memstash.io/values/backendip
+              --tags project=udapeople-backend \
+              --stack-name "backend-${CIRCLE_WORKFLOW_ID:0:7}" \
+              --parameter-overrides ID="${CIRCLE_WORKFLOW_ID:0:7}"  
       - run:
-          name: Add backend ip to ansible inventory
+          name: Ensure front-end infrastructure exist
           command: |
-            yum install tar -y
-            yum install gzip -y 
-            BACKEND_IP=$(curl -H "token: ${CIRCLE_WORKFLOW_ID:0:7}" --request GET https://api.memstash.io/values/backendip)
-            cd .circleci/ansible/
-            echo "[web]" > ./inventory.txt
-            echo ${BACKEND_IP} >> ./inventory.txt
-            cat ./inventory.txt
-      - persist_to_workspace: 
+            aws cloudformation deploy \
+              --template-file .circleci/files/frontend.yml \
+              --tags project=udapeople-frontend \
+              --stack-name "frontend-${CIRCLE_WORKFLOW_ID:0:7}" \
+              --parameter-overrides ID="${CIRCLE_WORKFLOW_ID:0:7}"  
+      - run:
+          name: Add back-end ip to ansible inventory
+          command: |
+            aws ec2 describe-instances \
+            --query 'Reservations[*].Instances[*].PublicIpAddress' \
+            --filters "Name=tag:Name,Values=backend-${CIRCLE_WORKFLOW_ID:0:7}" \
+            --output text >> .circleci/ansible/inventory.txt
+            BACKEND_IP=`cat .circleci/ansible/inventory.txt | head -2 | tail -1`
+            echo "BACKEND_IP: ${BACKEND_IP}"
+      - persist_to_workspace:
           root: ~/
           paths:
-            - project
+            - project/.circleci/ansible/inventory.txt
       - destroy-environment:
           WorkflowID: "${CIRCLE_WORKFLOW_ID:0:7}"       
 
@@ -272,7 +267,7 @@ jobs:
             ls -la 
             tar -czvf artifact-"${CIRCLE_WORKFLOW_ID:0:7}".tar.gz dist
             ls -la 
-            aws s3 cp dist s3://udapeople-kkzain287dhjpp6288/ --recursive
+            aws s3 cp dist s3://udapeople-"${CIRCLE_WORKFLOW_ID:0:7}"/ --recursive
       - destroy-environment:
           WorkflowID: ${CIRCLE_WORKFLOW_ID:0:7}
       - revert-migrations      
@@ -349,7 +344,7 @@ jobs:
       - run:
           name: Frontend smoke test.
           command: |
-            URL="http://udapeople-kkzain287dhjpp6288.s3-website-us-east-1.amazonaws.com"
+            URL="http://udapeople-"${CIRCLE_WORKFLOW_ID:0:7}".s3-website-us-east-1.amazonaws.com"
             curl -s $URL | grep "Welcome"
             if curl -s $URL | grep "Welcome"
             then

@@ -135,7 +135,7 @@ jobs:
           name: Add back-end ip to ansible inventory
           command: |
             aws ec2 describe-instances \
-            --query 'Reservations[*].Instances[*].PublicIpAddress' \
+            --query 'Reservations[*].Instances[*].PublicDnsName' \
             --filters "Name=tag:Name,Values=backend-${CIRCLE_WORKFLOW_ID:0:7}" \
             --output text >> .circleci/ansible/inventory.txt
             BACKEND_IP=`cat .circleci/ansible/inventory.txt | head -2 | tail -1`
@@ -313,6 +313,9 @@ jobs:
             cd .circleci/ansible
             BACKEND_IP=`cat inventory.txt | head -2 | tail -1`
             echo "BACKEND_IP: ${BACKEND_IP}"
+
+            export API_URL="${BACKEND_IP}:3030"
+            echo "API_URL=${API_URL}" >> "backend/.env"
             ansible-playbook -i inventory.txt deploy-backend.yml
           environment:
             ANSIBLE_HOST_KEY_CHECKING: false
@@ -333,14 +336,12 @@ jobs:
       - run:
           name: Get the URL of Backend and smoke test.
           command: |
-            BACKEND_IP=$(curl -H "token: ${CIRCLE_WORKFLOW_ID:0:7}" --request GET https://api.memstash.io/values/backendip)
+            # your code here
+            BACKEND_IP=`cat .circleci/ansible/inventory.txt | head -2 | tail -1`
             echo ${BACKEND_IP}
-            if curl "${BACKEND_IP}:3030/api/status" | grep "ok"
-            then
-                return 0
-            else
-                return 1
-            fi
+            export URL="http://$BACKEND_IP:3030/api/status"
+            echo $URL
+            curl $URL
       - run:
           name: Frontend smoke test.
           command: |

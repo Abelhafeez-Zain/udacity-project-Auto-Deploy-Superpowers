@@ -331,11 +331,15 @@ jobs:
       - image: python:3.7-alpine3.11
     steps:
       - checkout
+      - attach_workspace:
+            at: ~/
       - run:
           name: Install dependencies
           command: |
             apk add --update curl nodejs npm
             pip install awscli
+      - attach_workspace:
+            at: ~/
       - run:
           name: Get the URL of Backend and smoke test.
           command: |

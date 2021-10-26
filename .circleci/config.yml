@@ -255,16 +255,15 @@ jobs:
       - run:
           name: Deploy frontend objects
           command: |
-            aws ec2 describe-instances \
+            BACKEND_IP_tmp=aws ec2 describe-instances \
             --query 'Reservations[*].Instances[*].PublicDnsName' \
             --filters "Name=tag:Name,Values=backend-${CIRCLE_WORKFLOW_ID:0:7}" \
-            --output text >> .circleci/ansible/inventory.txt
-            BACKEND_IP=`cat .circleci/ansible/inventory.txt | head -2 | tail -1`
-            echo "BACKEND_IP: ${BACKEND_IP}"
+            --output text
+            echo "BACKEND_IP_tmp: ${BACKEND_IP_tmp}"
 
             # BACKEND_IP=$(curl -H "token: ${CIRCLE_WORKFLOW_ID:0:7}" --request GET https://api.memstash.io/values/backendip)
             cd frontend
-            export API_URL=http://${BACKEND_IP}:3030
+            export API_URL=http://${BACKEND_IP_tmp}:3030
             echo "API_URL=$API_URL" >> .env
             echo ${API_URL}
             echo ${CIRCLE_WORKFLOW_ID:0:7}
@@ -340,7 +339,8 @@ jobs:
       - run:
           name: Get the URL of Backend and smoke test.
           command: |
-            BACKEND_IP=$(curl -H "token: ${CIRCLE_WORKFLOW_ID:0:7}" --request GET https://api.memstash.io/values/backendip)
+            # BACKEND_IP=$(curl -H "token: ${CIRCLE_WORKFLOW_ID:0:7}" --request GET https://api.memstash.io/values/backendip)
+            BACKEND_IP=`cat .circleci/ansible/inventory.txt | head -2 | tail -1`
             echo ${BACKEND_IP}
             if curl "${BACKEND_IP}:3030/api/status" | grep "ok"
             then

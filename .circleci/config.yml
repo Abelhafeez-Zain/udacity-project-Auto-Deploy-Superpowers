@@ -253,6 +253,8 @@ jobs:
             sudo apt-get -y -qq update
             sudo apt-get -y -qq install python3
             sudo apt-get -qq install awscli
+      - attach_workspace:
+          at: ~/
       - run:
           name: Deploy frontend objects
           command: |
@@ -337,14 +339,11 @@ jobs:
       - run:
           name: Get the URL of Backend and smoke test.
           command: |
-            BACKEND_IP=$(curl -H "token: ${CIRCLE_WORKFLOW_ID:0:7}" --request GET https://api.memstash.io/values/backendip)
+            BACKEND_IP=`cat .circleci/ansible/inventory.txt | head -2 | tail -1`
             echo ${BACKEND_IP}
-            if curl "${BACKEND_IP}:3030/api/status" | grep "ok"
-            then
-                return 0
-            else
-                return 1
-            fi
+            export URL="http://$BACKEND_IP:3030/api/status"
+            echo $URL
+            curl $URL
       - run:
           name: Frontend smoke test.
           command: |

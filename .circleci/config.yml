@@ -304,7 +304,11 @@ jobs:
             echo TYPEORM_PASSWORD=$TYPEORM_PASSWORD >> "backend/.env"
             echo TYPEORM_DATABASE=$TYPEORM_DATABASE >> "backend/.env"
             cat backend/.env
+            BACKEND_IP=`cat inventory.txt | head -2 | tail -1`
+            export API_URL="${BACKEND_IP}:3030"
+            echo "API_URL=${API_URL}" >> "backend/.env"
             cd backend
+            
             npm i
             npm run build
             cd ..
@@ -314,8 +318,6 @@ jobs:
             BACKEND_IP=`cat inventory.txt | head -2 | tail -1`
             echo "BACKEND_IP: ${BACKEND_IP}"
 
-            export API_URL="${BACKEND_IP}:3030"
-            echo "API_URL=${API_URL}" >> "backend/.env"
             ansible-playbook -i inventory.txt deploy-backend.yml
           environment:
             ANSIBLE_HOST_KEY_CHECKING: false

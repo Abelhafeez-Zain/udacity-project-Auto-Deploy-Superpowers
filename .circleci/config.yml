@@ -263,7 +263,10 @@ jobs:
             echo "API_URL: ${API_URL}"
             export API_URL=${API_URL}
             echo "${API_URL}" >> "frontend/.env"
-
+            echo ENVIROMENT=production  >> "frontend/.env" 
+            echo NODE_ENV=production >> "frontend/.env"
+            cat "frontend/.env"
+            
             cd frontend
             # export API_URL=http://${BACKEND_IP}:3030
             echo "API_URL=$API_URL" >> .env
@@ -299,7 +302,7 @@ jobs:
           name: Deploy backend
           no_output_timeout: 25m
           command: | 
-            echo ENVIROMENT=$ENVIROMENT > "backend/.env"
+            echo ENVIROMENT=production > "backend/.env"
             echo TYPEORM_CONNECTION=postgres >> "backend/.env"
             echo TYPEORM_ENTITIES=./src/modules/domain/**/*.entity.ts >> "backend/.env"
             echo TYPEORM_HOST=$TYPEORM_HOST >> "backend/.env"

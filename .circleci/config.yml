@@ -135,7 +135,7 @@ jobs:
           name: Add back-end ip to ansible inventory
           command: |
             aws ec2 describe-instances \
-            --query 'Reservations[*].Instances[*].PublicDnsName' \
+            --query 'Reservations[*].Instances[*].PublicIpAddress' \
             --filters "Name=tag:Name,Values=backend-${CIRCLE_WORKFLOW_ID:0:7}" \
             --output text >> .circleci/ansible/inventory.txt
             BACKEND_IP=`cat .circleci/ansible/inventory.txt | head -2 | tail -1`
@@ -386,9 +386,9 @@ jobs:
             echo STACKS: "$STACKS" 
 
             aws cloudformation update-stack \
-            --stack-name udapeople-cloudfront \
             --use-previous-template \
-            --tags project=udapeople
+            --stack-name "udapeople-cloudfront" \
+            --parameters ParameterKey=WorkflowID,ParameterValue=${CIRCLE_WORKFLOW_ID:0:7} \
        # Here's where you will add some code to rollback on failure
       # - destroy-environment:
       #     WorkflowID: ${CIRCLE_WORKFLOW_ID:0:7}

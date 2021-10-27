@@ -207,15 +207,10 @@ jobs:
             npm install 
             npm run migrations > migration_output.txt
             cat migration_output.txt
-            if grep -q "has been executed successfully." migration_output.txt
-            then
-              touch ~/project/.circleci/outputs/db_migration_success
-            fi
+             
       - run:
           name: Send migration results to memstash
-          command: |
-            cd backend
-            cat migration_output.txt
+          command: |  
             result=0
             if grep -q "has been executed successfully" migration_output.txt
             then

@@ -170,7 +170,8 @@ jobs:
           command: |
             apk add openssh-client
       - run:
-          name: Configure server 
+          name: Configure server
+          no_output_timeout: 20m
           command: |
             pwd
             cd .circleci/ansible/
